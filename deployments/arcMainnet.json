@@ -1,0 +1,14 @@
+{
+  "network": "arcMainnet",
+  "chainId": 5042,
+  "address": "0x2E4bC9BF256857C281e7845EEB3D64c58D3B0904",
+  "deployTx": "0xe87984ec26c6cc952bd49894a56bf01e7a7e7a3881ba59c479cd4d3c4dcf8825",
+  "block": 25131813,
+  "deployer": "0x328805c4F890aD88eA573660F9467B65609231F1",
+  "admin": "0xec22F129eb0cD24d1f8887ed054044cbC5588150",
+  "usdc": "0x3600000000000000000000000000000000000000",
+  "minReward": "1000000",
+  "maxReward": "25000000",
+  "minBond": "500000",
+  "deployedAt": "2026-10-09T21:03:22.142Z"
+}
