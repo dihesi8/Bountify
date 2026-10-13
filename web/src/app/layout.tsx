@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Bountify",
-  description: "Pre-funded USDC bounties on Arc. Every reward is locked in escrow before work starts.",
+  title: "Bountify — Fund the work. Back the builders.",
+  description: "A USDC bounty marketplace on Arc. Every task is funded in escrow before work begins.",
 };
 import { Providers } from "@/components/Providers";
 
