@@ -24,24 +24,54 @@ export type FeedJob = JobMeta & {
 export const parseEscrowLogs = (logs: Log[]) => parseEventLogs({ abi: escrowAbi, logs });
 type EscrowLog = ReturnType<typeof parseEscrowLogs>[number];
 
-const MIN_SPAN = 2_000n;
+// Arc's public RPC allows at most 10,000 blocks per eth_getLogs call and rate-limits bursts (HTTP 429).
+// Strategy: 9,000-block chunks, 3 requests in flight. If a provider rejects the range size (other
+// providers have smaller caps), halve the chunk, remember the smaller size and carry on.
+const MAX_SPAN = 9_000n;
+const MIN_SPAN = 500n;
+let span = MAX_SPAN;
 
-/** getLogs that halves the block range whenever the RPC rejects it (range or result limits). */
-export async function getLogsAdaptive(
+const NOT_RANGE = /rate limit|\b(401|403|429)\b|too many requests|timeout|timed out|took too long|failed to fetch|network|forbidden|unauthorized|cors/i;
+const RANGE = /range|limit|exceed|too many|too large|too wide|more than|response size|10,?000|-32012/i;
+
+function isRangeError(err: unknown): boolean {
+  const e = err as { shortMessage?: string; details?: string };
+  const msg = `${e?.shortMessage ?? ""} ${e?.details ?? ""}`;
+  return !NOT_RANGE.test(msg) && RANGE.test(msg);
+}
+
+async function fetchRange(client: PublicClient, address: Address, from: bigint, to: bigint): Promise<Log[]> {
+  try {
+    return await client.getLogs({ address, fromBlock: from, toBlock: to });
+  } catch (err) {
+    if (!isRangeError(err) || to - from < MIN_SPAN) throw err;
+    span = span / 2n > MIN_SPAN ? span / 2n : MIN_SPAN;
+    const mid = from + (to - from) / 2n;
+    const left = await fetchRange(client, address, from, mid);
+    const right = await fetchRange(client, address, mid + 1n, to);
+    return [...left, ...right];
+  }
+}
+
+export async function getLogsChunked(
   client: PublicClient,
   address: Address,
   from: bigint,
   to: bigint
 ): Promise<Log[]> {
-  try {
-    return await client.getLogs({ address, fromBlock: from, toBlock: to });
-  } catch (err) {
-    if (to - from < MIN_SPAN) throw err;
-    const mid = from + (to - from) / 2n;
-    const left = await getLogsAdaptive(client, address, from, mid);
-    const right = await getLogsAdaptive(client, address, mid + 1n, to);
-    return [...left, ...right];
-  }
+  const parts: { start: bigint; logs: Log[] }[] = [];
+  let cursor = from;
+  const worker = async () => {
+    while (cursor <= to) {
+      const start = cursor;
+      const end = start + span - 1n > to ? to : start + span - 1n;
+      cursor = end + 1n;
+      parts.push({ start, logs: await fetchRange(client, address, start, end) });
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  parts.sort((x, y) => (x.start < y.start ? -1 : x.start > y.start ? 1 : 0));
+  return parts.flatMap((p) => p.logs);
 }
 
 /** Rebuilds every job's current state from the escrow's event history. */
@@ -137,9 +167,11 @@ export async function loadJobs(
 ): Promise<FeedJob[]> {
   const key = `${chainId}:${address}`;
   const c = cache.get(key) ?? { logs: [], next: deployBlock };
-  const latest = await client.getBlockNumber();
+  // Stay a few blocks behind the head: the primary RPC is load-balanced and a lagging backend can reject the newest block.
+  const head = await client.getBlockNumber();
+  const latest = head > 3n ? head - 3n : head;
   if (latest >= c.next) {
-    const raw = await getLogsAdaptive(client, address, c.next, latest);
+    const raw = await getLogsChunked(client, address, c.next, latest);
     c.logs = [...c.logs, ...parseEscrowLogs(raw)];
     c.next = latest + 1n;
   }

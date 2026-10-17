@@ -14,6 +14,7 @@ export function useJobs() {
     enabled: !!client,
     queryFn: () =>
       loadJobs(client as unknown as PublicClient, ACTIVE_CHAIN.id, ESCROW_ADDRESS, ESCROW_DEPLOY_BLOCK),
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
+    retry: 1,
   });
 }

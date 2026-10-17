@@ -118,6 +118,7 @@ export function TaskFeed() {
       {error && (
         <div className="py-10">
           <p>Couldn&apos;t load tasks from {ACTIVE_CHAIN.name}. Check your RPC connection, then retry.</p>
+          <p className="mt-1 text-sm text-zinc-500">{errorText(error)}</p>
           <button onClick={() => refetch()} className="mt-3 rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700">
             Retry
           </button>
@@ -135,4 +136,10 @@ export function TaskFeed() {
       </ul>
     </section>
   );
+}
+
+// viem errors keep the useful part (the server's reason) in `details`; `message` buries it after the request body.
+function errorText(e: Error & { shortMessage?: string; details?: string }) {
+  const text = [e.shortMessage, e.details].filter(Boolean).join(": ");
+  return (text || e.message).slice(0, 240);
 }

@@ -22,9 +22,13 @@ export const ESCROW_ADDRESSES: Record<number, Address> = {
  *  - Mainnet: the "block" field in deployments/arcMainnet.json
  *  - Testnet: the block of your first createJob transaction (see README / setup notes)
  */
+// Defaults are a block before each network's first job. Env overrides are ignored when empty or "0".
+const startBlock = (value: string | undefined, fallback: bigint) =>
+  value && value !== "0" ? BigInt(value) : fallback;
+
 export const DEPLOY_BLOCKS: Record<number, bigint> = {
-  [arcMainnet.id]: BigInt(process.env.NEXT_PUBLIC_ARC_MAINNET_DEPLOY_BLOCK || "0"),
-  [arcTestnet.id]: BigInt(process.env.NEXT_PUBLIC_ARC_TESTNET_DEPLOY_BLOCK || "0"),
+  [arcMainnet.id]: startBlock(process.env.NEXT_PUBLIC_ARC_MAINNET_DEPLOY_BLOCK, 25743158n),
+  [arcTestnet.id]: startBlock(process.env.NEXT_PUBLIC_ARC_TESTNET_DEPLOY_BLOCK, 66203429n),
 };
 
 export const ESCROW_ADDRESS: Address = ESCROW_ADDRESSES[ACTIVE_CHAIN.id];

@@ -12,9 +12,9 @@ Bountify removes payment risk for contributors and quality risk for creators. Ev
 **Deployed on Arc mainnet:** `0x2E4bC9BF256857C281e7845EEB3D64c58D3B0904`
 Deploy transaction: `0xe87984ec26c6cc952bd49894a56bf01e7a7e7a3881ba59c479cd4d3c4dcf8825`
 
-**Repository:** <paste your public GitHub URL>
+**Repository:**  <https://github.com/dihesi8/Bountify>
 
-**Demo (optional):** <Vercel URL or video link>
+**Demo (optional):** <https://bountify-chi.vercel.app/>
 
 **Evidence it works:**
 - Full lifecycle on Arc mainnet (job #1, 1 USDC): createJob `0x531d97a9f7342ce14fff2e35a8137a5885de866efb9080599f69027f40700952`, approveWork `0x9355da9943e0e4014ced6fe3bc3fb85708cacc8631a5979da5790eecc1b27693`. All six transactions are listed in the README.
